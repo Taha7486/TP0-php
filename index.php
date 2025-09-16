@@ -23,7 +23,7 @@ function write_emails($emails , $filename) {
 }
 
 function validate_email($email) {
-    $pattern = "/^[^@\s]+@[^@\s]+\.[^@\s]+$/";
+    $pattern = "/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/";
     if (preg_match($pattern, $email)) {// compare with expression reguliere
         return true ;
     } else {
@@ -54,12 +54,12 @@ function trier_enregistrer($file_old,$file_new){
     write_emails($emails,$file_new);
 }
 
-$emails = lire_emails("Emails.txt");
-write_emails($emails,"test.txt");
+$emails = lire_emails("Emails.txt");// test de lire
+write_emails($emails,"test.txt");//test d'ecriture
 
-trier_enregistrer("Emails.txt","Emails_Trier");
+trier_enregistrer("Emails.txt","Emails_Trier");//test de trier et enregister emails 
 
-lire_enregistrer_nonValides("Emails.txt");
+lire_enregistrer_nonValides("Emails.txt");//test d'enregister emails valides et non valides
 
 
 ?>
