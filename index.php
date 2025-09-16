@@ -57,7 +57,7 @@ function trier_enregistrer($file_old,$file_new){
 $emails = lire_emails("Emails.txt");// test de lire
 write_emails($emails,"test.txt");//test d'ecriture
 
-trier_enregistrer("Emails.txt","Emails_Trier");//test de trier et enregister emails 
+trier_enregistrer("Emails.txt","Emails_Trier.txt");//test de trier et enregister emails 
 
 lire_enregistrer_nonValides("Emails.txt");//test d'enregister emails valides et non valides
 
