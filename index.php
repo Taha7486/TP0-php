@@ -54,12 +54,22 @@ function trier_enregistrer($file_old,$file_new){
     write_emails($emails,$file_new);
 }
 
+function separer_par_Domaine($filename){
+    $emails = lire_emails($filename);
+    foreach ($emails as $email) {
+        $domaine = explode("@",$email);//splits the email to 2 parts and stores it in an array
+        $file = fopen("Emails/Email_".$domaine[1].".txt","a");
+        fwrite($file,$email."\n");
+    }
+}
+
 $emails = lire_emails("Emails.txt");// test de lire
 write_emails($emails,"test.txt");//test d'ecriture
 
-trier_enregistrer("Emails.txt","Emails_Trier");//test de trier et enregister emails 
+trier_enregistrer("Emails.txt","Emails_Trier.txt");//test de trier et enregister emails 
 
 lire_enregistrer_nonValides("Emails.txt");//test d'enregister emails valides et non valides
 
+separer_par_Domaine("Emails.txt");//test separation par domaine !!!!!CREATS A LOT OF FILES
 
 ?>
