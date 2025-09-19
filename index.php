@@ -90,11 +90,12 @@ function add_email($email, $filename) {
 
 // --------------------------------------------------
 $output = "";
+$add_email_message = "";
 
 // Handle reset button
 if (isset($_POST['reset_files'])) {
     $files_to_delete = ["EmailsT.txt", "Emails_Valides.txt", "Emails_Valides_Uniques.txt", "Emails_nonValides.txt"];
-    // Ajouter les fichiers par domaine si existants
+    // Add files by domain if exists
     foreach (glob("*.txt") as $f) {
         if (!in_array($f, $files_to_delete)) $files_to_delete[] = $f;
     }
@@ -122,7 +123,15 @@ if (isset($_FILES['emailsFile']) && $_FILES['emailsFile']['error'] === 0) {
 // Handle adding new email
 if (isset($_POST['new_email'])) {
     $message = add_email($_POST['new_email'], "EmailsT.txt");
-    $output .= "<p style='color:blue;'>$message</p>";
+
+    if ($message === "Adresse email ajoutée avec succès !") {
+        $add_email_message = "<span class='msg success'>$message</span>";
+    } elseif ($message === "Cette adresse email existe déjà !") {
+        $add_email_message = "<span class='msg warning'>$message</span>";
+    } else {
+        $add_email_message = "<span class='msg error'>$message</span>";
+    }
+
 
     // update domain-separated file
     $parts = explode("@", strtolower(trim($_POST['new_email'])));
@@ -146,7 +155,7 @@ if (file_exists("EmailsT.txt")) {
 }
 $fichiers = array_unique($fichiers);
 
-$files_html = "<h3>Fichiers générés :</h3><ul>";
+$files_html = "<ul>";
 foreach ($fichiers as $f) {
     if (file_exists($f)) $files_html .= "<li><a href='$f' download>$f</a></li>";
 }
@@ -160,32 +169,41 @@ $output .= $files_html;
 <head>
     <meta charset="UTF-8">
     <title>Gestion des Emails</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h2>Gestion des Emails</h2>
+    <div class="container">
+        <h2>Gestion des Emails</h2>
 
-    <!-- Upload form -->
-    <form method="POST" enctype="multipart/form-data">
-        <label>Choisissez votre fichier Emails.txt :</label><br><br>
-        <input type="file" name="emailsFile" accept=".txt" required><br><br>
-        <button type="submit">Uploader et traiter</button>
-    </form>
-    <hr>
+        <!-- Upload form -->
+        <form method="POST" enctype="multipart/form-data" class="form-block">
+            <label>Choisissez votre fichier Emails.txt</label><br>
+            <input type="file" name="emailsFile" accept=".txt" required><br>
+            <button type="submit">Uploader et traiter</button>
+        </form>
 
-    <!-- Add email form -->
-    <form method="POST">
-        <label>Ajouter une nouvelle adresse email :</label><br><br>
-        <input type="email" name="new_email" required>
-        <button type="submit">Ajouter</button>
-    </form>
-    <hr>
 
-    <!-- Reset form -->
-    <form method="POST">
-        <button type="submit" name="reset_files">Réinitialiser tous les fichiers</button>
-    </form>
+        <!-- Add email form -->
+        <form method="POST" class="form-block">
+            <label>Ajouter une nouvelle adresse email</label><br>
+            <input type="email" name="new_email" placeholder="exemple@email.com" required>
+            <div class="action-row">
+                <button type="submit">Ajouter</button>
+                <?php echo $add_email_message; ?>
+            </div>
+        </form>
 
-    <!-- Display messages and generated files -->
-    <?php echo $output; ?>
+        <h3>Fichiers générés</h3>
+        
+        <!-- Reset form -->
+        <form method="POST" class="form-block">
+            <button type="submit" name="reset_files" class="reset-btn">Réinitialiser tous les fichiers</button>
+        </form>
+
+        <!-- Display generated files -->
+        <div class="output">
+            <?php echo $output; ?>
+        </div>
+    </div>
 </body>
 </html>
