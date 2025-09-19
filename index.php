@@ -91,54 +91,64 @@ function add_email($email, $filename) {
 }
 
 
-// ----------------------------------------------------------------
+// ------------------------- Main Logic -------------------------
+$output = "";
 
+// 1. Handle file upload
 if (isset($_FILES['emailsFile']) && $_FILES['emailsFile']['error'] === 0) {
 
-    // Create uploads directory if it doesn't exist
     $uploadDir = "uploads/";
     if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
 
-    // Set the destination path
     $uploadedFile = $uploadDir . basename($_FILES['emailsFile']['name']);
 
-    // Move the uploaded file from temp to uploads folder
     if (move_uploaded_file($_FILES['emailsFile']['tmp_name'], $uploadedFile)) {
+        $output .= "<p style='color:green;'>Fichier déplacé et prêt à être traité !</p>";
 
-        echo "<p style='color:green;'>Fichier déplacé et prêt à être traité !</p>";
-
-        // Now run all functions on the moved file
+        // Process file
         lire_enregistrer_nonValides($uploadedFile);
         supprimer_doublons("Emails_Valides.txt", "Emails_Valides_Uniques.txt");
         trier_enregistrer("Emails_Valides_Uniques.txt", "EmailsT.txt");
         separer_par_domaine("EmailsT.txt");
-
-        // Display generated files
-        $fichiers = ["EmailsT.txt", "Emails_Valides.txt", "Emails_Valides_Uniques.txt", "Emails_nonValides.txt"];
-        $emails = lire_emails("EmailsT.txt");
-        foreach ($emails as $email) {
-            $parts = explode("@", $email);
-            $domain = $parts[1];
-            $fichiers[] = $domain . ".txt";
-        }
-        $fichiers = array_unique($fichiers);
-
-        echo "<h3>Fichiers générés :</h3><ul>";
-        foreach ($fichiers as $f) {
-            if (file_exists($f)) {
-                echo "<li><a href='$f' download>$f</a></li>";
-            }
-        }
-        echo "</ul>";
-
     } else {
-        echo "<p style='color:red;'>Erreur lors du déplacement du fichier.</p>";
+        $output .= "<p style='color:red;'>Erreur lors du déplacement du fichier.</p>";
     }
 }
 
+// 2. Handle adding new email
+if (isset($_POST['new_email'])) {
+    $message = add_email($_POST['new_email'], "EmailsT.txt");
+    $output .= "<p style='color:blue;'>$message</p>";
 
+    // Optional: update domain-separated file
+    $parts = explode("@", strtolower(trim($_POST['new_email'])));
+    $domain_file = $parts[1] . ".txt";
+    $existing = file_exists($domain_file) ? lire_emails($domain_file) : [];
+    $existing[] = strtolower(trim($_POST['new_email']));
+    $existing = array_unique($existing);
+    sort($existing);
+    write_emails($existing, $domain_file);
+}
+
+// 3. Always display all generated files if they exist
+$fichiers = ["EmailsT.txt", "Emails_Valides.txt", "Emails_Valides_Uniques.txt", "Emails_nonValides.txt"];
+if (file_exists("EmailsT.txt")) {
+    $emails = lire_emails("EmailsT.txt");
+    foreach ($emails as $email) {
+        $parts = explode("@", $email);
+        $domain_file = $parts[1] . ".txt";
+        $fichiers[] = $domain_file;
+    }
+}
+$fichiers = array_unique($fichiers);
+
+$files_html = "<h3>Fichiers générés :</h3><ul>";
+foreach ($fichiers as $f) {
+    if (file_exists($f)) $files_html .= "<li><a href='$f' download>$f</a></li>";
+}
+$files_html .= "</ul>";
+$output .= $files_html;
 ?>
-
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -148,10 +158,24 @@ if (isset($_FILES['emailsFile']) && $_FILES['emailsFile']['error'] === 0) {
 </head>
 <body>
     <h2>Gestion des Emails</h2>
+
+    <!-- Upload form -->
     <form method="POST" enctype="multipart/form-data">
         <label>Choisissez votre fichier Emails.txt :</label><br><br>
         <input type="file" name="emailsFile" accept=".txt" required><br><br>
         <button type="submit">Uploader et traiter</button>
     </form>
+
+    <hr>
+
+    <!-- Add email form -->
+    <form method="POST">
+        <label>Ajouter une nouvelle adresse email :</label><br><br>
+        <input type="email" name="new_email" required>
+        <button type="submit">Ajouter</button>
+    </form>
+
+    <!-- Display messages and generated files -->
+    <?php echo $output; ?>
 </body>
 </html>
