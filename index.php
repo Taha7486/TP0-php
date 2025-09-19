@@ -5,7 +5,7 @@ function lire_emails($filename) {
     $emails =[];
     while (!feof($file)) {
         $line = trim(fgets($file)); // trim to remove spaces and \n
-        if ($line !== "") { // if the ligne is empty
+        if ($line !== "") { // if the ligne isn't empty
             $emails[] = strtolower($line);
         }
     }
@@ -63,7 +63,7 @@ function separer_par_domaine($file_old){
         $domains[$domain][] = $email;
     }
     foreach ($domains as $domain => $list) {
-        $filename = $domain . ".txt";
+        $filename = "domains/" . $domain . ".txt";
         write_emails($list, $filename);
     }
 }
@@ -95,8 +95,10 @@ $add_email_message = "";
 // Handle reset button
 if (isset($_POST['reset_files'])) {
     $files_to_delete = ["EmailsT.txt", "Emails_Valides.txt", "Emails_Valides_Uniques.txt", "Emails_nonValides.txt"];
-    // Add files by domain if exists
-    foreach (glob("*.txt") as $f) {
+    foreach (glob("uploads/*.txt") as $f) {
+        if (!in_array($f, $files_to_delete)) $files_to_delete[] = $f;
+    }
+    foreach (glob("domains/*.txt") as $f) {
         if (!in_array($f, $files_to_delete)) $files_to_delete[] = $f;
     }
     foreach ($files_to_delete as $f) {
@@ -105,10 +107,8 @@ if (isset($_POST['reset_files'])) {
 }
 
 // Handle file upload
-if (isset($_FILES['emailsFile']) && $_FILES['emailsFile']['error'] === 0) {
-    $uploadDir = "uploads/";
-    if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-    $uploadedFile = $uploadDir . basename($_FILES['emailsFile']['name']);
+if (isset($_FILES['emailsFile']) && $_FILES['emailsFile']['error'] === 0) { //check if the upload was successful
+    $uploadedFile = "uploads/" . basename($_FILES['emailsFile']['name']);
     if (move_uploaded_file($_FILES['emailsFile']['tmp_name'], $uploadedFile)) {
         // Process file
         lire_enregistrer_nonValides($uploadedFile);
@@ -135,7 +135,7 @@ if (isset($_POST['new_email'])) {
 
     // update domain-separated file
     $parts = explode("@", strtolower(trim($_POST['new_email'])));
-    $domain_file = $parts[1] . ".txt";
+    $domain_file = "domains/" . $parts[1] . ".txt";
     $existing = file_exists($domain_file) ? lire_emails($domain_file) : [];
     $existing[] = strtolower(trim($_POST['new_email']));
     $existing = array_unique($existing);
@@ -145,15 +145,8 @@ if (isset($_POST['new_email'])) {
 
 // Display generated files
 $fichiers = ["EmailsT.txt", "Emails_Valides.txt", "Emails_Valides_Uniques.txt", "Emails_nonValides.txt"];
-if (file_exists("EmailsT.txt")) {
-    $emails = lire_emails("EmailsT.txt");
-    foreach ($emails as $email) {
-        $parts = explode("@", $email);
-        $domain_file = $parts[1] . ".txt";
-        $fichiers[] = $domain_file;
-    }
-}
-$fichiers = array_unique($fichiers);
+$domain_files = glob("domains/*.txt");
+$fichiers = array_merge($fichiers, $domain_files);
 
 $files_html = "<ul>";
 foreach ($fichiers as $f) {
@@ -161,6 +154,7 @@ foreach ($fichiers as $f) {
 }
 $files_html .= "</ul>";
 $output .= $files_html;
+
 ?>
 
 
@@ -181,7 +175,6 @@ $output .= $files_html;
             <input type="file" name="emailsFile" accept=".txt" required><br>
             <button type="submit">Uploader et traiter</button>
         </form>
-
 
         <!-- Add email form -->
         <form method="POST" class="form-block">
