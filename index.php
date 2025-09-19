@@ -68,10 +68,31 @@ function separer_par_domaine($file_old){
     }
 }
 
+function email_exists($email, $filename) {
+    $emails = lire_emails($filename);
+    return in_array(strtolower($email), $emails);
+}
+
+function add_email($email, $filename) {
+    $email = strtolower(trim($email));
+    if (!validate_email($email)) {
+        return "Adresse email invalide !";
+    }
+    if (email_exists($email, $filename)) {
+        return "Cette adresse email existe déjà !";
+    }
+
+    $file = fopen($filename, "a");
+    fwrite($file, $email . "\n");
+    fclose($file);
+    return "Adresse email ajoutée avec succès !";
+}
+
 // --------------------------------------------------
 $output = "";
+$add_email_message = "";
 
-// Handle file upload
+// file upload
 if (isset($_FILES['emailsFile']) && $_FILES['emailsFile']['error'] === 0) {//check if the upload was successful
     $uploadedFile = "uploads/" . basename($_FILES['emailsFile']['name']);
     if (move_uploaded_file($_FILES['emailsFile']['tmp_name'], $uploadedFile)) {
@@ -83,21 +104,47 @@ if (isset($_FILES['emailsFile']) && $_FILES['emailsFile']['error'] === 0) {//che
         $output .= "<p style='color:red;'>Erreur lors du déplacement du fichier.</p>";
     }
 }
-
+// reset
 if (isset($_POST['reset_files'])) {
     $files_to_delete = ["EmailsT.txt", "Emails_Valides.txt", "Emails_Valides_Uniques.txt", "Emails_nonValides.txt"];
     foreach (glob("uploads/*.txt") as $f) {
-        if (!in_array($f, $files_to_delete)) $files_to_delete[] = $f;
+        if (!in_array($f, $files_to_delete)) 
+            $files_to_delete[] = $f;
     }
     foreach (glob("domains/*.txt") as $f) {
-        if (!in_array($f, $files_to_delete)) $files_to_delete[] = $f;
+        if (!in_array($f, $files_to_delete)) 
+            $files_to_delete[] = $f;
     }
     foreach ($files_to_delete as $f) {
-        if (file_exists($f)) unlink($f);
+        if (file_exists($f)) 
+            unlink($f);
     }
 }
 
-// Display generated files
+//add email
+if (isset($_POST['new_email'])) {
+    $message = add_email($_POST['new_email'], "EmailsT.txt");
+
+    if ($message === "Adresse email ajoutée avec succès !") {
+        $add_email_message = "<span class='msg success'>$message</span>";
+    } elseif ($message === "Cette adresse email existe déjà !") {
+        $add_email_message = "<span class='msg warning'>$message</span>";
+    } else {
+        $add_email_message = "<span class='msg error'>$message</span>";
+    }
+
+
+    // update domain-separated file
+    $parts = explode("@", strtolower(trim($_POST['new_email'])));
+    $domain_file ="domains/". $parts[1] . ".txt";
+    $existing = file_exists($domain_file) ? lire_emails($domain_file) : [];
+    $existing[] = strtolower(trim($_POST['new_email']));
+    $existing = array_unique($existing);
+    sort($existing);
+    write_emails($existing, $domain_file);
+}
+
+// display
 $fichiers = ["EmailsT.txt", "Emails_Valides.txt", "Emails_Valides_Uniques.txt", "Emails_nonValides.txt"];
 
 $domain_files = glob("domains/*.txt");
@@ -118,7 +165,7 @@ $output .= $files_html;
 
 
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
     <meta charset="UTF-8">
     <title>Gestion des Emails</title>
@@ -136,6 +183,15 @@ $output .= $files_html;
 
         <form method="POST" class="form-block">
             <button type="submit" name="reset_files" class="reset-btn">Réinitialiser tous les fichiers</button>
+        </form>
+
+        <form method="POST" class="form-block">
+            <label>Ajouter une nouvelle adresse email</label><br>
+            <input type="email" name="new_email" placeholder="exemple@email.com" required>
+            <div class="action-row">
+                <button type="submit">Ajouter</button>
+                <?php echo $add_email_message; ?>
+            </div>
         </form>
 
         <h3>Fichiers générés</h3>
