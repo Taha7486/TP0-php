@@ -70,6 +70,26 @@ function separer_par_domaine($file_old){
     }
 }
 
+function email_exists($email, $filename) {
+    $emails = lire_emails($filename);
+    return in_array(strtolower($email), $emails);
+}
+
+function add_email($email, $filename) {
+    $email = strtolower(trim($email));
+    if (!validate_email($email)) {
+        return "Adresse email invalide !";
+    }
+    if (email_exists($email, $filename)) {
+        return "Cette adresse email existe déjà !";
+    }
+
+    $file = fopen($filename, "a");
+    fwrite($file, $email . "\n");
+    fclose($file);
+    return "Adresse email ajoutée avec succès !";
+}
+
 
 // ----------------------------------------------------------------
 
