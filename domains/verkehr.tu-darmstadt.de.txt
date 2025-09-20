@@ -1,4 +1,0 @@
-chai@verkehr.tu-darmstadt.de
-crespo@verkehr.tu-darmstadt.de
-oetting@verkehr.tu-darmstadt.de
-steinbach@verkehr.tu-darmstadt.de

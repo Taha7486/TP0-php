@@ -1,4 +1,8 @@
 <?php
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require __DIR__ . '/vendor/autoload.php';
 
 function lire_emails($filename) {
     $file = fopen($filename, "r") or Die("Unable to open file");
@@ -133,8 +137,7 @@ if (isset($_POST['new_email'])) {
         $add_email_message = "<span class='msg error'>$message</span>";
     }
 
-
-    // update domain-separated file
+    // update domain files
     $parts = explode("@", strtolower(trim($_POST['new_email'])));
     $domain_file ="domains/". $parts[1] . ".txt";
     $existing = file_exists($domain_file) ? lire_emails($domain_file) : [];
@@ -143,6 +146,42 @@ if (isset($_POST['new_email'])) {
     sort($existing);
     write_emails($existing, $domain_file);
 }
+
+if (isset($_POST['send_email'])) {
+    $to = $_POST['recipient'];
+    $subject = $_POST['subject'];
+    $message = $_POST['message'];
+
+    $mail = new PHPMailer(true);
+
+    try {
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'tp0.php.send.email@gmail.com';  
+        $mail->Password   = 'vxmqvosmjygpffrm';    
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
+
+        // Recipients
+        $mail->setFrom('yourgmail@gmail.com', 'Gestionnaire Emails');
+        $mail->addAddress($to);
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body    = nl2br($message); // convert new lines to <br>
+        $mail->AltBody = $message;        // plain text fallback
+
+        $mail->send();
+        echo "✅ Email envoyé à $to";
+    } catch (Exception $e) {
+        echo "❌ Erreur lors de l'envoi. Détails : {$mail->ErrorInfo}";
+    }
+}
+
+
 
 // display
 $fichiers = ["EmailsT.txt", "Emails_Valides.txt", "Emails_Valides_Uniques.txt", "Emails_nonValides.txt"];
@@ -193,6 +232,24 @@ $output .= $files_html;
                 <?php echo $add_email_message; ?>
             </div>
         </form>
+
+        <form method="POST">
+         <label>Choisissez un destinataire :</label>
+         <select name="recipient">
+         <?php 
+             $emails = lire_emails("Emails_Messa.txt");
+             foreach ($emails as $e) {
+            echo "<option value='$e'>$e</option>";
+            }
+         ?>
+            </select><br>
+            <label>Sujet :</label>
+            <input type="text" name="subject" required><br>
+            <label>Message :</label>
+            <textarea name="message" required></textarea><br>
+            <button type="submit" name="send_email">Envoyer</button>
+        </form>
+
 
         <h3>Fichiers générés</h3>
 
