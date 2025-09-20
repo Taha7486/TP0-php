@@ -88,6 +88,22 @@ function add_email($email, $filename) {
     return "Adresse email ajoutée avec succès !";
 }
 
+function send_email_to_all($subject, $message, $filename) {
+    $emails = lire_emails($filename);
+    $headers = "From: amine.elhauari@gmail.com\r\n";
+    $headers .= "Reply-To: amine.elhauari@gmail.com\r\n";
+    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+
+    $sent = 0;
+    foreach ($emails as $email) {
+        if (mail($email, $subject, $message, $headers)) {
+            $sent++;
+        }
+    }
+    return "Message envoyé à $sent destinataire(s).";
+}
+
+
 // --------------------------------------------------
 $output = "";
 $add_email_message = "";
@@ -155,6 +171,21 @@ foreach ($fichiers as $f) {
 $files_html .= "</ul>";
 $output .= $files_html;
 
+// Handle sending email to the list of emails
+$send_message_result = "";
+if (isset($_POST['send_message'])) {
+    $subject = trim($_POST['subject']);
+    $message = trim($_POST['message']);
+
+    if ($subject === "" || $message === "") {
+        $send_message_result = "<span class='msg error'>Sujet et message sont obligatoires !</span>";
+    } elseif (!file_exists("EmailsT.txt")) {
+        $send_message_result = "<span class='msg error'>Le fichier EmailsT.txt est introuvable !</span>";
+    } else {
+        $send_message_result = "<span class='msg success'>" . send_email_to_all($subject, $message, "EmailsT.txt") . "</span>";
+    }
+}
+
 ?>
 
 
@@ -183,6 +214,17 @@ $output .= $files_html;
             <div class="action-row">
                 <button type="submit">Ajouter</button>
                 <?php echo $add_email_message; ?>
+            </div>
+        </form>
+
+        <!-- Send message form -->
+        <form method="POST" class="form-block">
+            <label>Envoyer un message à tous les emails</label><br>
+            <input type="text" name="subject" placeholder="Sujet" required><br>
+            <textarea name="message" rows="5" placeholder="Votre message..." required></textarea><br>
+            <div class="action-row">
+                <button type="submit" name="send_message">Envoyer</button>
+                <?php echo $send_message_result; ?>
             </div>
         </form>
 

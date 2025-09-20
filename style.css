@@ -125,3 +125,12 @@ button:hover {
     background: #f8d7da;
     border: 1px solid #f5c6cb;
 }
+
+textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 10px 12px 0;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    resize: vertical;
+}
